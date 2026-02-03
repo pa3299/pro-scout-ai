@@ -25,21 +25,29 @@ export default function Home() {
         })
       });
 
-      // 1. Get the raw text first
       const rawText = await res.text();
 
-      // 2. Try to understand what it is
+      // --- BULLETPROOF LOGIC ---
       try {
-        // If it looks like a list (starts with '['), parse it!
-        if (rawText.trim().startsWith('[')) {
-          const data = JSON.parse(rawText);
-          setPlayers(data);
+        // 1. Force the app to try parsing the text as a List of Players
+        const data = JSON.parse(rawText);
+
+        if (Array.isArray(data)) {
+          // It IS a list! Clean the names and show buttons.
+          // (This removes the "|12345" ID from the name so it looks nice)
+          const cleanPlayers = data.map((p: any) => ({
+            ...p,
+            name: p.name ? p.name.split('|')[0].trim() : "Unknown"
+          }));
+          
+          setPlayers(cleanPlayers);
+          
         } else {
-          // It's not a list, so it must be the Report HTML
-          throw new Error("Not a list");
+          // It's valid JSON but not a list? Treat as error/report.
+          throw new Error("Not a player list");
         }
       } catch (e) {
-        // If it failed to parse as JSON, treat it as HTML Report
+        // 2. If JSON parsing failed, it MUST be the HTML Report. Open the popup.
         const newWindow = window.open();
         if (newWindow) {
           newWindow.document.write(rawText);
