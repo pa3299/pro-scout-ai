@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, ChevronRight, Shield } from "lucide-react";
+import { User, ChevronRight, Shield } from "lucide-react"; // No framer-motion!
 import { SearchHero } from "@/app/components/search-hero";
 import { TacticalBackground } from "@/app/components/tactical-background";
 
@@ -10,12 +10,11 @@ export default function Home() {
   const [players, setPlayers] = useState<any[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
 
-  const handleSearch = async (query: string) => {
-    // Safety check: Prevent empty searches
-    if (!query || (!query.trim() && typeof query === 'string')) return;
+  const handleSearch = async (query: string | number) => {
+    if (!query) return;
     
     setIsLoading(true);
-    setPlayers([]);
+    setPlayers([]); 
 
     try {
       const res = await fetch('/api/generate', {
@@ -30,16 +29,15 @@ export default function Home() {
       const contentType = res.headers.get("content-type");
 
       if (contentType && contentType.includes("application/json")) {
-        // --- IT IS A LIST (Ask user to choose) ---
+        // --- IT IS A LIST (Show Buttons) ---
         const data = await res.json();
         
         const cleanPlayers = Array.isArray(data) ? data.map((p: any) => {
-          // Logic: Split "Name|ID"
           const parts = p.name ? p.name.split('|') : ["Unknown"];
           return {
             ...p,
-            name: parts[0].trim(), 
-            id: parts[1] || p.id, // Save the ID for the click
+            name: parts[0].trim(),         
+            id: parts[1] || p.id,          // Capture the ID
             team: p.team || "Unknown Team",
             country: p.country || "",
             position: p.position || "Player"
@@ -80,9 +78,9 @@ export default function Home() {
           onLanguageChange={setSelectedLanguage}
         />
         
-        {/* --- INLINE PLAYER LIST (Guaranteed to work) --- */}
+        {/* --- INLINE PLAYER LIST --- */}
         {players.length > 0 && (
-          <div className="w-full max-w-2xl mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="w-full max-w-2xl mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center gap-4 mb-2">
               <div className="h-px flex-1 bg-slate-800" />
               <span className="text-xs font-medium text-slate-500 uppercase tracking-widest">
@@ -96,9 +94,9 @@ export default function Home() {
                 <button
                   key={player.id || i}
                   onClick={() => {
-                     // DEBUG: Verify we are sending the ID
-                     console.log("Searching for ID:", player.id); 
-                     handleSearch(player.id || player.name);
+                     // DEBUG: Verify we are sending the NUMBER ID
+                     console.log("Clicking ID:", player.id); 
+                     handleSearch(player.id); 
                   }} 
                   className="group relative flex items-center gap-4 p-4 w-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/50 rounded-xl transition-all duration-300 text-left"
                 >
@@ -111,8 +109,10 @@ export default function Home() {
                       <h3 className="font-semibold text-slate-200 group-hover:text-white">
                         {player.name}
                       </h3>
-                      {/* Optional: Show ID for debugging */}
-                      {/* <span className="text-xs text-slate-600">({player.id})</span> */}
+                      {/* Debug ID Tag */}
+                      <span className="text-[10px] text-slate-600 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                        #{player.id}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1 text-sm text-slate-500 group-hover:text-slate-400">
                       <Shield className="h-3 w-3" />
