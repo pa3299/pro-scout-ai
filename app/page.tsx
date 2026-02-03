@@ -25,47 +25,36 @@ export default function Home() {
         })
       });
 
-      // 1. Get raw text
-      const rawText = await res.text();
-      
-      // 2. NUCLEAR CLEAN: Remove invisible BOM characters and whitespace
-      // The \uFEFF is a common invisible character that breaks JSON
-      const cleanText = rawText.trim().replace(/^\uFEFF/, '');
+      // 1. Check the Label (Header) from the Server
+      const contentType = res.headers.get("content-type");
 
-      try {
-        // 3. Try parsing the Clean Text
-        const data = JSON.parse(cleanText);
+      if (contentType && contentType.includes("application/json")) {
+        // CASE A: It is a List! (JSON)
+        const data = await res.json();
+        
+        // Clean the names (remove |12345 ID)
+        const cleanPlayers = Array.isArray(data) ? data.map((p: any) => ({
+          ...p,
+          name: p.name ? p.name.split('|')[0].trim() : "Unknown",
+          id: p.name ? p.name.split('|')[1] : null 
+        })) : [];
 
-        if (Array.isArray(data)) {
-          // IT WORKED! It is a list.
-          // Clean up the names (remove the "|12345" ID part)
-          const cleanPlayers = data.map((p: any) => ({
-            ...p,
-            name: p.name ? p.name.split('|')[0].trim() : "Unknown",
-            // Keep the ID hidden but available for the next search
-            id: p.name ? p.name.split('|')[1] : null 
-          }));
-          
-          setPlayers(cleanPlayers);
-        } else {
-          // Valid JSON, but not a list? Must be an error or unexpected object.
-          throw new Error("Not an array");
-        }
+        setPlayers(cleanPlayers);
 
-      } catch (jsonError) {
-        // 4. If Parsing Fails, it's the HTML Report. Open it.
-        // We only open the popup if we are SURE it's not a list.
+      } else {
+        // CASE B: It is the Report! (HTML)
+        const html = await res.text();
         const newWindow = window.open();
         if (newWindow) {
-          newWindow.document.write(rawText);
+          newWindow.document.write(html);
           newWindow.document.close();
         } else {
-          alert("Report generated! Please allow popups to view it.");
+          alert("Report generated! Please check your popup blocker.");
         }
       }
 
     } catch (e) {
-      alert("System Error: Could not connect to the Scout Brain.");
+      alert("Error connecting to Scout AI.");
     }
     
     setIsLoading(false);
@@ -86,7 +75,6 @@ export default function Home() {
         {players.length > 0 && (
           <PlayerDisambiguation
             players={players}
-            // When user clicks a button, we run the search again with the specific name
             onSelectPlayer={(name) => handleSearch(name)}
           />
         )}
