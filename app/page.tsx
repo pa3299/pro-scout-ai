@@ -13,7 +13,7 @@ export default function Home() {
   const handleSearch = async (playerName: string) => {
     if (!playerName.trim()) return;
     setIsLoading(true);
-    setPlayers([]);
+    setPlayers([]); // Clear previous results
 
     try {
       const res = await fetch('/api/generate', {
@@ -25,22 +25,30 @@ export default function Home() {
         })
       });
 
-      const contentType = res.headers.get("content-type");
+      // 1. Get the raw text first
+      const rawText = await res.text();
 
-      if (contentType && contentType.includes("application/json")) {
-        const data = await res.json();
-        const playerList = Array.isArray(data) ? data : (data.players || []);
-        setPlayers(playerList);
-      } else {
-        const html = await res.text();
+      // 2. Try to understand what it is
+      try {
+        // If it looks like a list (starts with '['), parse it!
+        if (rawText.trim().startsWith('[')) {
+          const data = JSON.parse(rawText);
+          setPlayers(data);
+        } else {
+          // It's not a list, so it must be the Report HTML
+          throw new Error("Not a list");
+        }
+      } catch (e) {
+        // If it failed to parse as JSON, treat it as HTML Report
         const newWindow = window.open();
         if (newWindow) {
-          newWindow.document.write(html);
+          newWindow.document.write(rawText);
           newWindow.document.close();
         } else {
           alert("Please allow popups to see the report!");
         }
       }
+
     } catch (e) {
       alert("Error connecting to Scout AI.");
     }
