@@ -3,23 +3,26 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { player_name } = body;
+    const { player_name, language } = body; // This stays 'language' because it comes from the frontend
 
-    // We will set this secret URL in Vercel later
     const N8N_URL = process.env.N8N_WEBHOOK_SECRET;
 
     if (!N8N_URL) {
       return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
     }
 
-    // Send the data to your n8n workflow
+    // --- THE CHANGE IS HERE ---
     const n8nResponse = await fetch(N8N_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        query: { player: player_name } 
+        query: { 
+          player: player_name,
+          lang: language   // <--- CHANGE "language" TO "lang" TO MATCH YOUR N8N PROMPT
+        } 
       })
     });
+    // --------------------------
 
     const htmlContent = await n8nResponse.text();
 
