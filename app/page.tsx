@@ -13,7 +13,7 @@ export default function Home() {
   const handleSearch = async (playerName: string) => {
     if (!playerName.trim()) return;
     setIsLoading(true);
-    setPlayers([]); // Clear previous results
+    setPlayers([]);
 
     try {
       const res = await fetch('/api/generate', {
@@ -25,40 +25,47 @@ export default function Home() {
         })
       });
 
+      // 1. Get raw text
       const rawText = await res.text();
+      
+      // 2. NUCLEAR CLEAN: Remove invisible BOM characters and whitespace
+      // The \uFEFF is a common invisible character that breaks JSON
+      const cleanText = rawText.trim().replace(/^\uFEFF/, '');
 
-      // --- BULLETPROOF LOGIC ---
       try {
-        // 1. Force the app to try parsing the text as a List of Players
-        const data = JSON.parse(rawText);
+        // 3. Try parsing the Clean Text
+        const data = JSON.parse(cleanText);
 
         if (Array.isArray(data)) {
-          // It IS a list! Clean the names and show buttons.
-          // (This removes the "|12345" ID from the name so it looks nice)
+          // IT WORKED! It is a list.
+          // Clean up the names (remove the "|12345" ID part)
           const cleanPlayers = data.map((p: any) => ({
             ...p,
-            name: p.name ? p.name.split('|')[0].trim() : "Unknown"
+            name: p.name ? p.name.split('|')[0].trim() : "Unknown",
+            // Keep the ID hidden but available for the next search
+            id: p.name ? p.name.split('|')[1] : null 
           }));
           
           setPlayers(cleanPlayers);
-          
         } else {
-          // It's valid JSON but not a list? Treat as error/report.
-          throw new Error("Not a player list");
+          // Valid JSON, but not a list? Must be an error or unexpected object.
+          throw new Error("Not an array");
         }
-      } catch (e) {
-        // 2. If JSON parsing failed, it MUST be the HTML Report. Open the popup.
+
+      } catch (jsonError) {
+        // 4. If Parsing Fails, it's the HTML Report. Open it.
+        // We only open the popup if we are SURE it's not a list.
         const newWindow = window.open();
         if (newWindow) {
           newWindow.document.write(rawText);
           newWindow.document.close();
         } else {
-          alert("Please allow popups to see the report!");
+          alert("Report generated! Please allow popups to view it.");
         }
       }
 
     } catch (e) {
-      alert("Error connecting to Scout AI.");
+      alert("System Error: Could not connect to the Scout Brain.");
     }
     
     setIsLoading(false);
@@ -79,6 +86,7 @@ export default function Home() {
         {players.length > 0 && (
           <PlayerDisambiguation
             players={players}
+            // When user clicks a button, we run the search again with the specific name
             onSelectPlayer={(name) => handleSearch(name)}
           />
         )}
