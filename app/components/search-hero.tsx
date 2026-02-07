@@ -15,7 +15,7 @@ const languages = [
 ];
 
 interface SearchHeroProps {
-  onSearch: (playerName: string) => void;
+  onSearch: (playerName: string, clubName: string) => void; // Added clubName
   isLoading: boolean;
   selectedLanguage: string;
   onLanguageChange: (lang: string) => void;
@@ -28,16 +28,15 @@ export function SearchHero({
   onLanguageChange,
 }: SearchHeroProps) {
   const [playerName, setPlayerName] = useState("");
-  const currentLang = languages.find((l) => l.code === selectedLanguage) || languages[0];
+  const [clubName, setClubName] = useState(""); // New State
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(playerName);
+    onSearch(playerName, clubName); // Pass both
   };
 
   return (
     <div className="w-full max-w-2xl relative z-10">
-      {/* Logo Area */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center gap-3 mb-4">
           <div className="relative">
@@ -55,14 +54,13 @@ export function SearchHero({
         </p>
       </div>
 
-      {/* Glass Card */}
       <div className="relative group">
         <div className="absolute -inset-1 bg-blue-500/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition duration-500" />
         
         <div className="relative bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 md:p-8 shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             
-            {/* Search Input */}
+            {/* Player Name */}
             <div className="space-y-2">
               <label className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-2">
                 <Search className="w-4 h-4" />
@@ -70,7 +68,7 @@ export function SearchHero({
               </label>
               <input
                 type="text"
-                placeholder="Enter player name (e.g., Lamine Yamal)"
+                placeholder="e.g. Lamine Yamal (Leave empty for Club Search)"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 className="w-full h-14 pl-5 pr-5 text-lg bg-slate-950/50 border border-slate-700 rounded-xl placeholder:text-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all outline-none"
@@ -78,17 +76,29 @@ export function SearchHero({
               />
             </div>
 
+            {/* Club Name (New) */}
+            <div className="space-y-2">
+              <label className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Club Name (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Barcelona"
+                value={clubName}
+                onChange={(e) => setClubName(e.target.value)}
+                className="w-full h-14 pl-5 pr-5 text-lg bg-slate-950/50 border border-slate-700 rounded-xl placeholder:text-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all outline-none"
+                disabled={isLoading}
+              />
+            </div>
+
             <div className="h-px bg-slate-700/50" />
 
-            {/* Language Selector */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">
-                  Report Language
-                </span>
+                <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">Language</span>
               </div>
-              
               <div className="relative">
                 <select 
                   value={selectedLanguage}
@@ -96,36 +106,21 @@ export function SearchHero({
                   className="appearance-none bg-slate-950/50 border border-slate-700 text-white pl-4 pr-10 py-2 rounded-lg cursor-pointer hover:border-blue-500/50 focus:outline-none focus:border-blue-500 transition-colors"
                 >
                   {languages.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                       {lang.flag} {lang.name}
-                    </option>
+                    <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
             </div>
 
-            {/* Button */}
             <button
               type="submit"
-              disabled={isLoading || !playerName.trim()}
+              disabled={isLoading || (!playerName.trim() && !clubName.trim())}
               className={`w-full h-14 text-lg font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                isLoading 
-                ? 'bg-slate-700 cursor-not-allowed text-slate-400'
-                : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-lg hover:shadow-blue-500/25'
+                isLoading ? 'bg-slate-700 cursor-not-allowed text-slate-400' : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-lg hover:shadow-blue-500/25'
               }`}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Search className="w-5 h-5" />
-                  Generate Report
-                </>
-              )}
+              {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /> Analyzing...</> : <><Search className="w-5 h-5" /> {clubName && !playerName ? "Find Club Squad" : "Scout Player (Precision)"}</>}
             </button>
           </form>
         </div>
@@ -133,3 +128,5 @@ export function SearchHero({
     </div>
   );
 }
+// Helper icon import if missing
+import { Shield } from "lucide-react";

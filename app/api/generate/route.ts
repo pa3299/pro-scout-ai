@@ -3,36 +3,40 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { player_name, language } = body;
+    // FIX 1: Extract club_name
+    const { player_name, club_name, language } = body;
     const N8N_URL = process.env.N8N_WEBHOOK_SECRET;
 
     if (!N8N_URL) {
       return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
     }
 
-    // 1. Get the raw text from n8n
+    // FIX 2: Send 'club' to N8N
     const n8nResponse = await fetch(N8N_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: { player: player_name, lang: language } })
+      body: JSON.stringify({ 
+          query: { 
+              player: player_name, 
+              club: club_name || "", // <--- THIS WAS MISSING
+              lang: language 
+          } 
+      })
     });
 
     const rawText = await n8nResponse.text();
     const cleanText = rawText.trim();
 
-    // 2. DECISION TIME: Does it start with '['?
-    // If yes, it is a List of Players (JSON).
-    if (cleanText.startsWith('[')) {
+    if (cleanText.startsWith('[') || cleanText.startsWith('{')) {
       try {
         const jsonData = JSON.parse(cleanText);
-        return NextResponse.json(jsonData); // Send as Proper JSON
+        const list = Array.isArray(jsonData) ? jsonData : (jsonData.candidates || []);
+        return NextResponse.json(list); 
       } catch (e) {
-        // If parsing fails, fall back to HTML
         return new NextResponse(rawText, { headers: { 'Content-Type': 'text/html' } });
       }
     } 
     
-    // 3. Otherwise, it is the Scout Report (HTML)
     return new NextResponse(rawText, {
       headers: { 'Content-Type': 'text/html' }
     });
