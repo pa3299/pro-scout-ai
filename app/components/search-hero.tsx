@@ -40,11 +40,11 @@ export function SearchHero({
       <div className="text-center mb-8">
         
         {/* --- HEADER SECTION START --- */}
-        {/* 'flex-row' puts them on the same line. 'gap-6' adds space between ball and text. */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
+        {/* Adjusted: gap-4 (tighter) and -ml-4 (shifts slightly left to center nicely) */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-8 -ml-2 md:-ml-4">
           
-          {/* LOGO: Increased size significantly (w-36 is approx 144px) */}
-          <div className="relative w-28 h-28 md:w-36 md:h-36 transition-transform hover:scale-105 duration-500 shrink-0">
+          {/* LOGO: Scaled slightly for balance */}
+          <div className="relative w-28 h-28 md:w-32 md:h-32 transition-transform hover:scale-105 duration-500 shrink-0">
             <img 
               src="/logo.png" 
               alt="Pro Scout AI Logo" 
@@ -52,7 +52,7 @@ export function SearchHero({
             />
           </div>
 
-          {/* TITLE: Big bold text on the same line */}
+          {/* TITLE */}
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white flex items-center gap-3">
             <span>Pro Scout</span>
             <span className="text-blue-400">AI</span>
