@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Loader2, ChevronDown, Globe, Sparkles } from "lucide-react";
+import { Search, Loader2, ChevronDown, Globe, Shield } from "lucide-react"; 
 
 const languages = [
   { code: "English", name: "English", flag: "🇬🇧" },
@@ -15,7 +15,7 @@ const languages = [
 ];
 
 interface SearchHeroProps {
-  onSearch: (playerName: string, clubName: string) => void; // Added clubName
+  onSearch: (playerName: string, clubName: string) => void;
   isLoading: boolean;
   selectedLanguage: string;
   onLanguageChange: (lang: string) => void;
@@ -28,27 +28,37 @@ export function SearchHero({
   onLanguageChange,
 }: SearchHeroProps) {
   const [playerName, setPlayerName] = useState("");
-  const [clubName, setClubName] = useState(""); // New State
+  const [clubName, setClubName] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(playerName, clubName); // Pass both
+    onSearch(playerName, clubName);
   };
 
   return (
     <div className="w-full max-w-2xl relative z-10">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center gap-3 mb-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-blue-400" />
-            </div>
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-pulse" />
+        <div className="inline-flex items-center justify-center gap-4 mb-4">
+          
+          {/* --- LOGO SECTION START --- */}
+          <div className="relative w-16 h-16">
+            {/* UPDATED: Points to logo.png now */}
+            <img 
+              src="/logo.png" 
+              alt="Pro Scout AI Logo" 
+              className="w-full h-full object-cover rounded-full border-2 border-blue-500/50 shadow-[0_0_25px_rgba(59,130,246,0.6)]" 
+            />
+            {/* Optional: A small pulsing dot to show it's 'live' */}
+            <div className="absolute top-0 right-0 w-3 h-3 bg-green-400 rounded-full animate-pulse border border-black" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
-            Pro Scout <span className="text-blue-400">AI</span>
+          {/* --- LOGO SECTION END --- */}
+
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white flex flex-col items-start leading-none">
+            <span>Pro Scout</span>
+            <span className="text-blue-400">AI</span>
           </h1>
         </div>
+        
         <p className="text-slate-400 text-lg font-mono tracking-wide">
           Elite Player Analysis & Data Recruitment
         </p>
@@ -60,7 +70,7 @@ export function SearchHero({
         <div className="relative bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 md:p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-4">
             
-            {/* Player Name */}
+            {/* Player Name Input */}
             <div className="space-y-2">
               <label className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-2">
                 <Search className="w-4 h-4" />
@@ -68,7 +78,7 @@ export function SearchHero({
               </label>
               <input
                 type="text"
-                placeholder="e.g. Lamine Yamal (Leave empty for Club Search)"
+                placeholder="e.g. Harry (Leave empty to search Club squad)"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 className="w-full h-14 pl-5 pr-5 text-lg bg-slate-950/50 border border-slate-700 rounded-xl placeholder:text-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all outline-none"
@@ -76,7 +86,7 @@ export function SearchHero({
               />
             </div>
 
-            {/* Club Name (New) */}
+            {/* Club Name Input */}
             <div className="space-y-2">
               <label className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-2">
                 <Shield className="w-4 h-4" />
@@ -84,7 +94,7 @@ export function SearchHero({
               </label>
               <input
                 type="text"
-                placeholder="e.g. Barcelona"
+                placeholder="e.g. Fulham"
                 value={clubName}
                 onChange={(e) => setClubName(e.target.value)}
                 className="w-full h-14 pl-5 pr-5 text-lg bg-slate-950/50 border border-slate-700 rounded-xl placeholder:text-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all outline-none"
@@ -120,7 +130,7 @@ export function SearchHero({
                 isLoading ? 'bg-slate-700 cursor-not-allowed text-slate-400' : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-lg hover:shadow-blue-500/25'
               }`}
             >
-              {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /> Analyzing...</> : <><Search className="w-5 h-5" /> {clubName && !playerName ? "Find Club Squad" : "Scout Player (Precision)"}</>}
+              {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /> Analyzing...</> : <><Search className="w-5 h-5" /> Scout</>}
             </button>
           </form>
         </div>
@@ -128,5 +138,3 @@ export function SearchHero({
     </div>
   );
 }
-// Helper icon import if missing
-import { Shield } from "lucide-react";
