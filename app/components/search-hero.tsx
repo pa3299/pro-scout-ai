@@ -38,26 +38,27 @@ export function SearchHero({
   return (
     <div className="w-full max-w-2xl relative z-10">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center gap-4 mb-4">
+        
+        {/* --- HEADER SECTION START --- */}
+        <div className="flex flex-col items-center justify-center gap-6 mb-6">
           
-          {/* --- LOGO SECTION START --- */}
-          <div className="relative w-16 h-16">
-            {/* UPDATED: Points to logo.png now */}
+          {/* LOGO: Bigger, no border, floating */}
+          <div className="relative w-28 h-28 md:w-32 md:h-32 transition-transform hover:scale-105 duration-500">
             <img 
               src="/logo.png" 
               alt="Pro Scout AI Logo" 
-              className="w-full h-full object-cover rounded-full border-2 border-blue-500/50 shadow-[0_0_25px_rgba(59,130,246,0.6)]" 
+              className="w-full h-full object-contain drop-shadow-[0_0_35px_rgba(59,130,246,0.6)]" 
             />
-            {/* Optional: A small pulsing dot to show it's 'live' */}
-            <div className="absolute top-0 right-0 w-3 h-3 bg-green-400 rounded-full animate-pulse border border-black" />
           </div>
-          {/* --- LOGO SECTION END --- */}
 
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white flex flex-col items-start leading-none">
+          {/* TITLE: Back on one line */}
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white flex items-center gap-3">
             <span>Pro Scout</span>
             <span className="text-blue-400">AI</span>
           </h1>
+          
         </div>
+        {/* --- HEADER SECTION END --- */}
         
         <p className="text-slate-400 text-lg font-mono tracking-wide">
           Elite Player Analysis & Data Recruitment
