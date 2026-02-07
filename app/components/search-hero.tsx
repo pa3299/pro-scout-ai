@@ -36,14 +36,15 @@ export function SearchHero({
   };
 
   return (
-    <div className="w-full max-w-2xl relative z-10">
+    <div className="w-full max-w-4xl relative z-10">
       <div className="text-center mb-8">
         
         {/* --- HEADER SECTION START --- */}
-        <div className="flex flex-col items-center justify-center gap-6 mb-6">
+        {/* 'flex-row' puts them on the same line. 'gap-6' adds space between ball and text. */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
           
-          {/* LOGO: Bigger, no border, floating */}
-          <div className="relative w-28 h-28 md:w-32 md:h-32 transition-transform hover:scale-105 duration-500">
+          {/* LOGO: Increased size significantly (w-36 is approx 144px) */}
+          <div className="relative w-28 h-28 md:w-36 md:h-36 transition-transform hover:scale-105 duration-500 shrink-0">
             <img 
               src="/logo.png" 
               alt="Pro Scout AI Logo" 
@@ -51,8 +52,8 @@ export function SearchHero({
             />
           </div>
 
-          {/* TITLE: Back on one line */}
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white flex items-center gap-3">
+          {/* TITLE: Big bold text on the same line */}
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white flex items-center gap-3">
             <span>Pro Scout</span>
             <span className="text-blue-400">AI</span>
           </h1>
@@ -65,7 +66,7 @@ export function SearchHero({
         </p>
       </div>
 
-      <div className="relative group">
+      <div className="relative group max-w-2xl mx-auto">
         <div className="absolute -inset-1 bg-blue-500/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition duration-500" />
         
         <div className="relative bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 md:p-8 shadow-2xl">
