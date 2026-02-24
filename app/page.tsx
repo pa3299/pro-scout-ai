@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, ChevronRight, Shield, FileText, X, Loader2, ArrowLeft } from "lucide-react"; 
+import { ChevronRight, Shield, FileText, X, Loader2, ArrowLeft } from "lucide-react"; 
 import { SearchHero } from "@/app/components/search-hero";
 import { TacticalBackground } from "@/app/components/tactical-background";
 
@@ -15,6 +15,7 @@ export default function Home() {
   const [configuringPlayer, setConfiguringPlayer] = useState<any>(null);
   const [playerSeasons, setPlayerSeasons] = useState<any[]>([]);
   const [selectedTournamentSeason, setSelectedTournamentSeason] = useState("");
+  const [isFetchingSeasons, setIsFetchingSeasons] = useState(false); 
 
   const handleSearch = async (query: string | number, clubName: string = "") => {
     if (!query && !clubName) return;
@@ -22,7 +23,7 @@ export default function Home() {
     setIsLoading(true);
     setPlayers([]); 
     setReportHtml(null);
-    setConfiguringPlayer(null); // Reset config view on new search
+    setConfiguringPlayer(null); 
 
     try {
       const res = await fetch('/api/generate', {
@@ -70,43 +71,64 @@ export default function Home() {
     setIsLoading(false);
   };
 
-  // NEW FUNCTION: Fetch Seasons when a player is clicked
   const handleSelectPlayer = async (player: any) => {
     setConfiguringPlayer(player);
-    setPlayerSeasons([]); // Clear previous, shows loader
+    setPlayerSeasons([]); 
+    setIsFetchingSeasons(true); 
 
     try {
       const res = await fetch(`https://api.sofascore.app/api/v1/player/${player.id}/statistics/seasons`, {
         referrerPolicy: "no-referrer"
       });
+      
+      if (!res.ok) throw new Error("API returned " + res.status);
+      
       const data = await res.json();
 
       let options: any[] = [];
       if (data.uniqueTournamentSeasons) {
         data.uniqueTournamentSeasons.forEach((uts: any) => {
-          const tName = uts.uniqueTournament.name;
-          const tId = uts.uniqueTournament.id;
-          uts.seasons.forEach((season: any) => {
-            options.push({
-              label: `${season.year} - ${tName}`,
-              s_id: season.id,
-              t_id: tId,
-              year: season.year
+          const tName = uts.uniqueTournament?.name || "Unknown Tournament";
+          const tId = uts.uniqueTournament?.id || "";
+          
+          if (uts.seasons && Array.isArray(uts.seasons)) {
+            uts.seasons.forEach((season: any) => {
+              options.push({
+                label: `${season.year || "Unknown"} - ${tName}`,
+                s_id: season.id || "",
+                t_id: tId,
+                year: season.year || ""
+              });
             });
-          });
+          }
         });
       }
 
-      // Sort: Newest year first
-      options.sort((a, b) => b.year.localeCompare(a.year));
+      // FIX: Securely cast to string so it never crashes on integer years
+      options.sort((a, b) => String(b.year).localeCompare(String(a.year)));
+      
+      // FIX: Safe fallback if no seasons exist
+      if (options.length === 0) {
+          options.push({
+              label: "Latest Available Data",
+              s_id: "",
+              t_id: "",
+              year: "Latest"
+          });
+      }
       
       setPlayerSeasons(options);
-      if (options.length > 0) setSelectedTournamentSeason(`${options[0].s_id}|${options[0].t_id}`);
+      setSelectedTournamentSeason(`${options[0].s_id}|${options[0].t_id}`);
       
-    } catch (e) { console.error("Failed to fetch seasons", e); }
+    } catch (e) { 
+      console.error("Failed to fetch seasons", e); 
+      setPlayerSeasons([{ label: "Latest Available Data", s_id: "", t_id: "", year: "Latest" }]);
+      setSelectedTournamentSeason("|");
+    }
+    
+    setIsFetchingSeasons(false); 
   };
 
-  // NEW FUNCTION: Generate the actual report with the selected season
   const handleGenerateReport = async () => {
     if (!configuringPlayer || !selectedTournamentSeason) return;
     
@@ -114,7 +136,6 @@ export default function Home() {
     setReportHtml(null);
     const [s_id, t_id] = selectedTournamentSeason.split('|');
 
-    // NEW: Get the text label of the selected season to pass to the AI
     const selectedOpt = playerSeasons.find(o => `${o.s_id}|${o.t_id}` === selectedTournamentSeason);
     const campaignName = selectedOpt ? selectedOpt.label : "Latest Campaign";
 
@@ -126,14 +147,14 @@ export default function Home() {
           player_name: configuringPlayer.id.toString(), 
           club_name: "", 
           language: selectedLanguage,
-          season_id: s_id,       // Passed to backend
-          tournament_id: t_id,   // Passed to backend
-          campaign_name: campaignName // <-- Passing the name to n8n!
+          season_id: s_id,       
+          tournament_id: t_id,   
+          campaign_name: campaignName 
         })
       });
       const html = await res.text();
       setReportHtml(html); 
-      setConfiguringPlayer(null); // Return to normal state
+      setConfiguringPlayer(null); 
     } catch (e) { alert("Generation failed."); }
     setIsLoading(false);
   };
@@ -210,7 +231,8 @@ export default function Home() {
 
                 {/* Right: The Red Circle Area (Dropdown & Generate Button) */}
                 <div className="flex items-center gap-3">
-                   {playerSeasons.length === 0 ? (
+                   {/* FIX: Now securely relying on isFetchingSeasons */}
+                   {isFetchingSeasons ? (
                       <div className="flex items-center gap-2 text-slate-400 text-sm px-4"><Loader2 className="w-4 h-4 animate-spin" /> Loading seasons...</div>
                    ) : (
                       <select 
@@ -225,7 +247,7 @@ export default function Home() {
                    )}
                    <button 
                      onClick={handleGenerateReport} 
-                     disabled={isLoading || playerSeasons.length === 0}
+                     disabled={isLoading || isFetchingSeasons}
                      className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] flex items-center gap-2"
                    >
                      {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Fetching...</> : 'Generate Report'}
