@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 
+// NEW: Force Vercel to NEVER cache this API route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    // NEW: Extract all timeline variables from the frontend body
+    // Extract all timeline variables from the frontend body
     const { player_name, club_name, language, season_id, tournament_id, campaign_name } = body;
     
-    // FIX 1: Hardcoded your permanent Ngrok URL
+    // Hardcoded your permanent Ngrok URL
     const N8N_URL = "https://epitomic-tory-unretreating.ngrok-free.dev/webhook/boss"; 
 
     // Send flat structure so n8n Boss can read it easily
@@ -16,7 +19,6 @@ export async function POST(request: Request) {
             player: player_name,
             club: club_name || "",
             lang: language || "en",
-            // NEW: Passing the timeline data to n8n!
             season_id: season_id || "",
             tournament_id: tournament_id || "",
             campaign_name: campaign_name || "Latest Campaign"
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true' // FIX 2: The magic bypass key!
+        'ngrok-skip-browser-warning': 'true' 
       },
       body: JSON.stringify(payload),
       signal: controller.signal
