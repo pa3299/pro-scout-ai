@@ -3,7 +3,9 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { player_name, club_name, language } = body;
+    
+    // NEW: Extract all timeline variables from the frontend body
+    const { player_name, club_name, language, season_id, tournament_id, campaign_name } = body;
     
     // FIX 1: Hardcoded your permanent Ngrok URL
     const N8N_URL = "https://epitomic-tory-unretreating.ngrok-free.dev/webhook/boss"; 
@@ -13,7 +15,11 @@ export async function POST(request: Request) {
         query: {
             player: player_name,
             club: club_name || "",
-            lang: language || "en"
+            lang: language || "en",
+            // NEW: Passing the timeline data to n8n!
+            season_id: season_id || "",
+            tournament_id: tournament_id || "",
+            campaign_name: campaign_name || "Latest Campaign"
         }
     };
 
