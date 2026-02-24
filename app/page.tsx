@@ -86,8 +86,21 @@ export default function Home() {
       const data = await res.json();
 
       let options: any[] = [];
+      let utsArray: any[] = [];
+
+      // FIX: Aggressively check for the "types" wrapper (Club vs National stats)
       if (data.uniqueTournamentSeasons) {
-        data.uniqueTournamentSeasons.forEach((uts: any) => {
+        utsArray = data.uniqueTournamentSeasons;
+      } else if (data.types) {
+        Object.values(data.types).forEach((typeObj: any) => {
+          if (typeObj && typeObj.uniqueTournamentSeasons) {
+            utsArray = utsArray.concat(typeObj.uniqueTournamentSeasons);
+          }
+        });
+      }
+
+      if (utsArray.length > 0) {
+        utsArray.forEach((uts: any) => {
           const tName = uts.uniqueTournament?.name || "Unknown Tournament";
           const tId = uts.uniqueTournament?.id || "";
           
@@ -104,12 +117,23 @@ export default function Home() {
         });
       }
 
-      // FIX: Securely cast to string so it never crashes on integer years
+      // Securely cast to string so it never crashes on integer years
       options.sort((a, b) => String(b.year).localeCompare(String(a.year)));
       
-      // FIX: Safe fallback if no seasons exist
-      if (options.length === 0) {
-          options.push({
+      // Deduplicate in case Sofascore returned overlapping data
+      const uniqueOptions: any[] = [];
+      const seen = new Set();
+      options.forEach(opt => {
+         const key = `${opt.s_id}|${opt.t_id}`;
+         if (!seen.has(key)) {
+            seen.add(key);
+            uniqueOptions.push(opt);
+         }
+      });
+      
+      // Safe fallback ONLY if truly no data exists anywhere
+      if (uniqueOptions.length === 0) {
+          uniqueOptions.push({
               label: "Latest Available Data",
               s_id: "",
               t_id: "",
@@ -117,8 +141,8 @@ export default function Home() {
           });
       }
       
-      setPlayerSeasons(options);
-      setSelectedTournamentSeason(`${options[0].s_id}|${options[0].t_id}`);
+      setPlayerSeasons(uniqueOptions);
+      setSelectedTournamentSeason(`${uniqueOptions[0].s_id}|${uniqueOptions[0].t_id}`);
       
     } catch (e) { 
       console.error("Failed to fetch seasons", e); 
@@ -207,7 +231,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* VIEW 2: CONFIGURE SELECTED PLAYER (The Dropdown Area) */}
+        {/* VIEW 2: CONFIGURE SELECTED PLAYER */}
         {configuringPlayer && !reportHtml && (
            <div className="w-full max-w-3xl mt-8 space-y-4 animate-in fade-in zoom-in duration-500">
              <div className="flex items-center justify-between gap-4 mb-2">
@@ -217,7 +241,6 @@ export default function Home() {
              </div>
 
              <div className="flex items-center gap-4 p-4 w-full bg-slate-900 border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.1)] rounded-xl">
-                {/* Left: Player Info */}
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-800 overflow-hidden border-2 border-blue-500/50">
                   <img src={`https://api.sofascore.app/api/v1/player/${configuringPlayer.id}/image`} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                 </div>
@@ -229,9 +252,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Right: The Red Circle Area (Dropdown & Generate Button) */}
                 <div className="flex items-center gap-3">
-                   {/* FIX: Now securely relying on isFetchingSeasons */}
                    {isFetchingSeasons ? (
                       <div className="flex items-center gap-2 text-slate-400 text-sm px-4"><Loader2 className="w-4 h-4 animate-spin" /> Loading seasons...</div>
                    ) : (
