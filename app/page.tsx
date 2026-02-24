@@ -231,7 +231,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* VIEW 2: CONFIGURE SELECTED PLAYER */}
+        {/* VIEW 2: CONFIGURE SELECTED PLAYER (MOBILE OPTIMIZED) */}
         {configuringPlayer && !reportHtml && (
            <div className="w-full max-w-3xl mt-8 space-y-4 animate-in fade-in zoom-in duration-500">
              <div className="flex items-center justify-between gap-4 mb-2">
@@ -240,24 +240,30 @@ export default function Home() {
                 <span className="text-xs font-medium text-blue-400 uppercase tracking-widest">Select Season</span>
              </div>
 
-             <div className="flex items-center gap-4 p-4 w-full bg-slate-900 border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.1)] rounded-xl">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-800 overflow-hidden border-2 border-blue-500/50">
-                  <img src={`https://api.sofascore.app/api/v1/player/${configuringPlayer.id}/image`} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-white text-lg">{configuringPlayer.name}</h3>
-                  <div className="flex items-center gap-2 mt-1 text-sm text-slate-400">
-                    {configuringPlayer.teamId && <img src={`https://api.sofascore.app/api/v1/team/${configuringPlayer.teamId}/image`} referrerPolicy="no-referrer" className="h-3.5 w-3.5 object-contain" />}
-                    <span>{configuringPlayer.team}</span>
-                  </div>
+             {/* MOBILE FIX: Changed flex direction and alignment breakpoints */}
+             <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 p-4 w-full bg-slate-900 border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.1)] rounded-xl">
+                {/* Left: Player Info */}
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-800 overflow-hidden border-2 border-blue-500/50">
+                    <img src={`https://api.sofascore.app/api/v1/player/${configuringPlayer.id}/image`} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                    </div>
+                    <div className="flex-1">
+                    <h3 className="font-bold text-white text-lg">{configuringPlayer.name}</h3>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-slate-400">
+                        {configuringPlayer.teamId && <img src={`https://api.sofascore.app/api/v1/team/${configuringPlayer.teamId}/image`} referrerPolicy="no-referrer" className="h-3.5 w-3.5 object-contain" />}
+                        <span>{configuringPlayer.team}</span>
+                    </div>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                {/* Right: The Red Circle Area (Dropdown & Generate Button) */}
+                {/* MOBILE FIX: Changed flex direction, added w-full, and mt-4 for spacing on mobile */}
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
                    {isFetchingSeasons ? (
-                      <div className="flex items-center gap-2 text-slate-400 text-sm px-4"><Loader2 className="w-4 h-4 animate-spin" /> Loading seasons...</div>
+                      <div className="flex items-center justify-center md:justify-start gap-2 text-slate-400 text-sm px-4 py-3 bg-slate-950 border border-slate-800 rounded-lg"><Loader2 className="w-4 h-4 animate-spin" /> Loading seasons...</div>
                    ) : (
                       <select 
-                        className="bg-slate-950 border border-slate-700 text-white text-sm pl-3 pr-8 py-3 rounded-lg cursor-pointer hover:border-blue-500/50 focus:outline-none focus:border-blue-500 transition-colors"
+                        className="bg-slate-950 border border-slate-700 text-white text-sm pl-3 pr-8 py-3 rounded-lg cursor-pointer hover:border-blue-500/50 focus:outline-none focus:border-blue-500 transition-colors w-full md:w-auto"
                         value={selectedTournamentSeason}
                         onChange={(e) => setSelectedTournamentSeason(e.target.value)}
                       >
@@ -269,7 +275,7 @@ export default function Home() {
                    <button 
                      onClick={handleGenerateReport} 
                      disabled={isLoading || isFetchingSeasons}
-                     className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] flex items-center gap-2"
+                     className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] flex items-center justify-center gap-2 w-full md:w-auto"
                    >
                      {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Fetching...</> : 'Generate Report'}
                    </button>
