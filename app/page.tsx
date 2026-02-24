@@ -35,7 +35,7 @@ export default function Home() {
         const data = await res.json();
         const rawList = Array.isArray(data) ? data : (data.candidates || []);
         
-        // FIX: Clean up name/ID string
+        // FIX: Clean up name/ID string and aggressively extract team ID
         const cleanPlayers = rawList.map((p: any) => {
           let cleanName = p.name || "Unknown";
           let cleanId = p.id;
@@ -47,11 +47,16 @@ export default function Home() {
             cleanId = parts[1] || p.id;
           }
 
+          // Force the app to check every possible location for the Team ID
+          const teamName = p.team?.name || p.entity?.team?.name || (typeof p.team === 'string' ? p.team : "Unknown Team");
+          const teamId = p.team?.id || p.teamId || p.team_id || p.entity?.team?.id || null;
+
           return {
             ...p,
             name: cleanName,         
             id: cleanId,          
-            team: p.team || "Unknown Team",
+            team: teamName,
+            teamId: teamId,
             country: p.country || "",
             position: p.position || "-"
           };
@@ -103,11 +108,39 @@ export default function Home() {
             <div className="grid gap-3">
               {players.map((player, i) => (
                 <button key={player.id || i} onClick={() => handleSearch(player.id, "")} className="group relative flex items-center gap-4 p-4 w-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/50 rounded-xl transition-all duration-300 text-left">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 group-hover:bg-blue-500/10 transition-colors"><User className="h-6 w-6 text-slate-400 group-hover:text-blue-400" /></div>
+                  
+                  {/* Player Image */}
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-800 overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-colors">
+                    <img 
+                      src={`https://api.sofascore.app/api/v1/player/${player.id}/image`} 
+                      alt={player.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => { e.currentTarget.src = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'; }}
+                    />
+                  </div>
+                  
                   <div className="flex-1">
-                    <div className="flex items-center gap-2"><h3 className="font-semibold text-slate-200 group-hover:text-white">{player.name}</h3>
-                    {player.position !== '-' && <span className="text-[10px] text-slate-600 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">#{player.position}</span>}</div>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-slate-500 group-hover:text-slate-400"><Shield className="h-3 w-3" /><span>{player.team}</span></div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-slate-200 group-hover:text-white">{player.name}</h3>
+                      {player.position !== '-' && <span className="text-[10px] text-slate-600 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">#{player.position}</span>}
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-1 text-sm text-slate-500 group-hover:text-slate-400">
+                      
+                      {/* UPDATED: Club Logo with perfect 3x3 sizing */}
+                      {player.teamId ? (
+                        <img 
+                          src={`https://api.sofascore.app/api/v1/team/${player.teamId}/image`} 
+                          alt={player.team}
+                          className="h-3 w-3 object-contain"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <Shield className="h-3 w-3" />
+                      )}
+                      
+                      <span>{player.team}</span>
+                    </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-slate-600 group-hover:text-blue-400 transition-all" />
                 </button>
