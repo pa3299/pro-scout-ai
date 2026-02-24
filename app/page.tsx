@@ -109,11 +109,12 @@ export default function Home() {
               {players.map((player, i) => (
                 <button key={player.id || i} onClick={() => handleSearch(player.id, "")} className="group relative flex items-center gap-4 p-4 w-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/50 rounded-xl transition-all duration-300 text-left">
                   
-                  {/* Player Image */}
+                  {/* Player Image - Added no-referrer here */}
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-800 overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-colors">
                     <img 
                       src={`https://api.sofascore.app/api/v1/player/${player.id}/image`} 
                       alt={player.name}
+                      referrerPolicy="no-referrer"
                       className="h-full w-full object-cover"
                       onError={(e) => { e.currentTarget.src = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'; }}
                     />
@@ -127,11 +128,12 @@ export default function Home() {
                     
                     <div className="flex items-center gap-2 mt-1 text-sm text-slate-500 group-hover:text-slate-400">
                       
-                      {/* UPDATED: Club Logo with perfect 3x3 sizing */}
+                      {/* Club Logo - Added no-referrer here */}
                       {player.teamId ? (
                         <img 
                           src={`https://api.sofascore.app/api/v1/team/${player.teamId}/image`} 
                           alt={player.team}
+                          referrerPolicy="no-referrer"
                           className="h-3 w-3 object-contain"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
