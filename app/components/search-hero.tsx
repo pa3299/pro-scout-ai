@@ -62,7 +62,7 @@ export function SearchHero({
         {/* --- HEADER SECTION END --- */}
         
         <p className="text-slate-400 text-lg font-mono tracking-wide">
-          Elite Player Analysis & Data Recruitment
+          Elite Player Scouting & Club Tactical Intelligence
         </p>
       </div>
 
@@ -92,7 +92,7 @@ export function SearchHero({
             <div className="space-y-2">
               <label className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                Club Name (Optional)
+                Club Name (For Filtering or Club Analysis)
               </label>
               <input
                 type="text"

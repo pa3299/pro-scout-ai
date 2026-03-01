@@ -7,8 +7,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    // Extract all timeline variables from the frontend body
-    const { player_name, club_name, language, season_id, tournament_id, campaign_name } = body;
+    // Extract all timeline variables PLUS the new report_type from the frontend body
+    const { player_name, club_name, language, season_id, tournament_id, campaign_name, report_type } = body;
     
     // Hardcoded your permanent Ngrok URL
     const N8N_URL = "https://epitomic-tory-unretreating.ngrok-free.dev/webhook/boss"; 
@@ -21,7 +21,8 @@ export async function POST(request: Request) {
             lang: language || "en",
             season_id: season_id || "",
             tournament_id: tournament_id || "",
-            campaign_name: campaign_name || "Latest Campaign"
+            campaign_name: campaign_name || "Latest Campaign",
+            report_type: report_type || "player" // <--- THE CRITICAL FIX: Passes the flag to n8n!
         }
     };
 
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
 
     // Increased Timeout (Local scraping needs >10s)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 Seconds
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 Seconds
 
     const n8nResponse = await fetch(N8N_URL, {
       method: 'POST',
