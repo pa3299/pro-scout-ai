@@ -12,6 +12,14 @@
 !/eslint.config.mjs
 !/README.md
 
+!/*.json
+!/*.js
+!/*.ts
+!/*.mjs
+!/*.cjs
+!/.gitignore
+!/README.md
+
 # 3. ROOT COMPONENTS ONLY: (The slash guarantees pro-scout-ui is ignored)
 !/app/components/
 !/app/components/**
@@ -31,6 +39,9 @@
 !/app/layout.tsx
 !/app/page.tsx
 !/app/globals.css
+# PUBLIC ASSETS (Logos, images, etc.)
+!/public/
+!/public/**
 
 # 5. ULTIMATE SAFETY NET: Always ignore these, even if whitelisted above
 node_modules/
