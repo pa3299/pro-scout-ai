@@ -1,0 +1,382 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronRight, Shield, FileText, X, Loader2, ArrowLeft } from "lucide-react"; 
+import { SearchHero } from "@/app/components/search-hero";
+import { TacticalBackground } from "@/app/components/tactical-background";
+
+export default function Home() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [players, setPlayers] = useState<any[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [reportHtml, setReportHtml] = useState<string | null>(null);
+
+  const [configuringPlayer, setConfiguringPlayer] = useState<any>(null);
+  const [playerSeasons, setPlayerSeasons] = useState<any[]>([]);
+  const [selectedTournamentSeason, setSelectedTournamentSeason] = useState("");
+  const [isFetchingSeasons, setIsFetchingSeasons] = useState(false); 
+
+  const handleSearch = async (query: string | number, clubName: string = "") => {
+    if (!query && !clubName) return;
+    
+    setIsLoading(true);
+    setPlayers([]); 
+    setReportHtml(null);
+    setConfiguringPlayer(null); 
+
+    try {
+      // 🎯 HITS THE NEW SEARCH ROUTE (TALKS TO THE WORKER)
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          player_name: query.toString(), 
+          club_name: clubName,
+          language: selectedLanguage 
+        })
+      });
+
+      const data = await res.json();
+      const rawList = Array.isArray(data) ? data : (data.candidates || []);
+      
+      const cleanPlayers = rawList.map((p: any) => {
+        let cleanName = p.name || "Unknown";
+        let cleanId = p.id;
+
+        if (cleanName.includes('|')) {
+          const parts = cleanName.split('|');
+          cleanName = parts[0].trim();
+          cleanId = parts[1] || p.id;
+        }
+
+        const teamName = p.team?.name || p.entity?.team?.name || (typeof p.team === 'string' ? p.team : "Unknown Team");
+        const teamId = p.team?.id || p.teamId || p.team_id || p.entity?.team?.id || null;
+
+        const countryToAlpha2: Record<string, string> = {
+          "England": "gb-eng", "Wales": "gb-wls", "Scotland": "gb-sct", "Northern Ireland": "gb-nir",
+          "Spain": "es", "France": "fr", "Germany": "de", "Italy": "it", "Argentina": "ar", "Brazil": "br",
+          "Portugal": "pt", "Netherlands": "nl", "Belgium": "be", "Croatia": "hr", "Uruguay": "uy", 
+          "Colombia": "co", "USA": "us", "United States": "us", "Mexico": "mx", "Senegal": "sn", 
+          "Morocco": "ma", "Japan": "jp", "South Korea": "kr", "Denmark": "dk", "Switzerland": "ch", 
+          "Austria": "at", "Turkey": "tr", "Poland": "pl", "Sweden": "se", "Norway": "no", 
+          "Serbia": "rs", "Czech Republic": "cz", "Ecuador": "ec", "Chile": "cl", "Peru": "pe", 
+          "Côte d'Ivoire": "ci", "Ivory Coast": "ci", "Cameroon": "cm", "Ghana": "gh", "Nigeria": "ng", 
+          "Algeria": "dz", "Egypt": "eg", "Canada": "ca", "Australia": "au", "Greece": "gr", 
+          "Romania": "ro", "Hungary": "hu", "Slovakia": "sk", "Slovenia": "si", "Finland": "fi", 
+          "Iceland": "is", "Republic of Ireland": "ie", "Bosnia & Herzegovina": "ba", "Ukraine": "ua"
+        };
+
+        const countryObj = p.country || p.entity?.country || p.player?.country || p.entity?.team?.country || p.team?.country || {};
+        const cName = typeof countryObj === 'string' ? countryObj : (countryObj.name || "");
+        
+        let cAlpha2 = "";
+        if (countryObj.alpha2) {
+            cAlpha2 = String(countryObj.alpha2).toLowerCase();
+        } else if (cName && countryToAlpha2[cName]) {
+            cAlpha2 = countryToAlpha2[cName];
+        }
+
+        if (cAlpha2 === 'en') cAlpha2 = 'gb-eng';
+        if (cAlpha2 === 'wa') cAlpha2 = 'gb-wls';
+        if (cAlpha2 === 'ni') cAlpha2 = 'gb-nir';
+        if (cAlpha2 === 'sc') cAlpha2 = 'gb-sct';
+
+        return {
+          ...p, name: cleanName, id: cleanId, team: teamName, teamId: teamId, 
+          country: cName, countryAlpha2: cAlpha2, position: p.position || "-"
+        };
+      });
+      
+      setPlayers(cleanPlayers);
+      
+    } catch (e) {
+      console.error(e);
+      alert("Connection error. Please try again.");
+    }
+    setIsLoading(false);
+  };
+
+  const handleSelectPlayer = async (player: any) => {
+    setConfiguringPlayer(player);
+    setPlayerSeasons([]); 
+    setIsFetchingSeasons(true); 
+
+    // THE MATHEMATICAL SLASH FIX
+    const formatSeasonCode = (code: string) => {
+        const strCode = String(code);
+        if (strCode.length === 4) {
+            const p1 = parseInt(strCode.slice(0, 2));
+            const p2 = parseInt(strCode.slice(2, 4));
+            // e.g. 24 + 1 = 25 -> 24/25. But 20 + 1 != 22 -> 2022
+            if (p1 + 1 === p2 || (p1 === 99 && p2 === 0)) {
+                return `${strCode.slice(0, 2)}/${strCode.slice(2)}`;
+            }
+        }
+        return strCode;
+    };
+
+    // ==========================================
+    // THE CLUB PATH
+    // ==========================================
+    if (player.type === 'team') {
+      try {
+        const res = await fetch(`/api/club-seasons?team_id=${player.id}`);
+        const mappedRows = await res.json();
+
+        let dynamicSeasons: any[] = [
+          { label: "Latest Campaign (Auto-Select)", s_id: "latest", t_id: "turso", year: "Latest", group: "Default" }
+        ];
+
+        if (Array.isArray(mappedRows)) {
+            mappedRows.forEach((row: any) => {
+              const seasonCode = String(row.season);      
+              const compName = String(row.competition || "Club Season"); 
+              
+              dynamicSeasons.push({
+                label: `${compName} (${formatSeasonCode(seasonCode)})`,
+                s_id: seasonCode,
+                t_id: compName, // FIX: Unique ID for React
+                year: seasonCode,
+                group: "Available Campaigns"
+              });
+            });
+        }
+        setPlayerSeasons(dynamicSeasons);
+        setSelectedTournamentSeason("latest|turso");
+      } catch (e) {
+        setPlayerSeasons([{ label: "Latest Campaign (Auto-Select)", s_id: "latest", t_id: "turso", year: "Latest", group: "Default" }]);
+        setSelectedTournamentSeason("latest|turso");
+      }
+      setIsFetchingSeasons(false);
+      return;
+    }
+
+    // ==========================================
+    // THE PLAYER PATH
+    // ==========================================
+    try {
+      const res = await fetch(`/api/seasons?player_id=${player.id}`);
+      const mappedRows = await res.json();
+
+      let dynamicSeasons: any[] = [
+        { label: "Latest Campaign (Auto-Select)", s_id: "latest", t_id: "turso", year: "Latest", group: "Default" }
+      ];
+
+      if (Array.isArray(mappedRows)) {
+          mappedRows.forEach((row: any) => {
+            const seasonCode = String(row.season);      
+            const compName = String(row.competition); 
+
+            const isCup = compName.toLowerCase().includes("cup") || 
+                          compName.toLowerCase().includes("euro") || 
+                          compName.toLowerCase().includes("olympic") || 
+                          compName.toLowerCase().includes("america") ||
+                          compName.toLowerCase().includes("nations");
+
+            dynamicSeasons.push({
+              label: `${compName} (${formatSeasonCode(seasonCode)})`,
+              s_id: isCup ? compName : seasonCode, 
+              t_id: compName, // FIX: Unique ID for React
+              year: seasonCode,
+              group: isCup ? "International & Cups" : "Domestic Leagues"
+            });
+          });
+      }
+
+      setPlayerSeasons(dynamicSeasons);
+      setSelectedTournamentSeason("latest|turso");
+
+    } catch (e) {
+      console.error("Failed to fetch player seasons", e);
+      setPlayerSeasons([{ label: "Latest Campaign (Auto-Select)", s_id: "latest", t_id: "turso", year: "Latest", group: "Default" }]);
+      setSelectedTournamentSeason("latest|turso");
+    }
+
+    setIsFetchingSeasons(false); 
+  };
+
+  const handleGenerateReport = async () => {
+    if (!configuringPlayer || !selectedTournamentSeason) return;
+    
+    setIsLoading(true);
+    setReportHtml(null);
+    const [s_id, t_id] = selectedTournamentSeason.split('|');
+
+    const selectedOpt = playerSeasons.find(o => `${o.s_id}|${o.t_id}` === selectedTournamentSeason);
+    const campaignName = selectedOpt ? selectedOpt.label : "Latest Campaign";
+
+    try {
+      // 🎯 HITS THE GENERATE ROUTE (TALKS TO THE BOSS)
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          player_name: configuringPlayer.type === 'team' ? `TEAM_${configuringPlayer.id}` : configuringPlayer.id.toString(), 
+          club_name: configuringPlayer.type === 'team' ? configuringPlayer.name : "", 
+          language: selectedLanguage,
+          season_id: s_id,       
+          tournament_id: t_id,   
+          campaign_name: campaignName,
+          report_type: configuringPlayer.type === 'team' ? "club" : "player" 
+        })
+      });
+      const html = await res.text();
+      setReportHtml(html); 
+      setConfiguringPlayer(null); 
+    } catch (e) { alert("Generation failed."); }
+    setIsLoading(false);
+  };
+
+  const openReport = () => {
+    if (!reportHtml) return;
+    const newWindow = window.open();
+    if (newWindow) { newWindow.document.write(reportHtml); newWindow.document.close(); } 
+    else { alert("Please allow popups to view the report."); }
+  };
+
+  const groupedSeasonsList = playerSeasons.reduce((acc, curr) => {
+      const key = curr.group || "Campaigns";
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(curr);
+      return acc;
+  }, {} as Record<string, any[]>);
+
+  const sortedGroupKeys = Object.keys(groupedSeasonsList);
+
+  return (
+    <main className="relative min-h-screen bg-slate-950 overflow-hidden font-sans">
+      <TacticalBackground />
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
+        <SearchHero onSearch={handleSearch} isLoading={isLoading} selectedLanguage={selectedLanguage} onLanguageChange={setSelectedLanguage} />
+        
+        {reportHtml && (
+          <div className="mt-8 animate-in fade-in zoom-in duration-500">
+            <button onClick={openReport} className="group relative flex items-center gap-4 p-6 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-2xl transition-all hover:scale-105">
+              <div className="p-3 bg-white/20 rounded-full"><FileText className="h-8 w-8 text-white" /></div>
+              <div className="text-left"><h3 className="text-lg font-bold">Report Generated Successfully!</h3><p className="text-blue-100 text-sm">Click here to view</p></div>
+              <ChevronRight className="h-6 w-6 ml-4 opacity-50 group-hover:opacity-100 transition-all" />
+              <div onClick={(e) => { e.stopPropagation(); setReportHtml(null); }} className="absolute -top-2 -right-2 bg-slate-800 text-slate-400 p-1.5 rounded-full hover:bg-red-500 hover:text-white cursor-pointer transition-colors"><X className="h-4 w-4" /></div>
+            </button>
+          </div>
+        )}
+        
+        {players.length > 0 && !reportHtml && !configuringPlayer && (
+          <div className="w-full max-w-2xl mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-4 mb-2"><div className="h-px flex-1 bg-slate-800" /><span className="text-xs font-medium text-slate-500 uppercase tracking-widest">Select Target</span><div className="h-px flex-1 bg-slate-800" /></div>
+            <div className="grid gap-3">
+              {players.map((player, i) => {
+                if (player.type === 'team') {
+                  return (
+                    <button key={`team-${player.id || i}`} onClick={() => handleSelectPlayer(player)} className="group relative flex items-center gap-4 p-5 w-full bg-gradient-to-r from-blue-900/40 to-slate-900/80 hover:from-blue-800/50 hover:to-slate-800 border-2 border-blue-500/50 rounded-xl transition-all duration-300 text-left shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white/10 p-2 overflow-hidden border border-blue-400/30">
+                        <img src={`https://api.sofascore.app/api/v1/team/${player.id}/image`} alt={player.name} referrerPolicy="no-referrer" className="h-full w-full object-contain" onError={(e) => { e.currentTarget.src = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'; }} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-xl text-blue-50 group-hover:text-white">{player.name}</h3>
+                          <span className="text-[10px] font-bold text-blue-900 bg-blue-400 px-2 py-0.5 rounded uppercase tracking-wider">Club Analysis</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-sm text-blue-200/70">
+                          {player.countryAlpha2 ? (
+                             <img src={`https://flagcdn.com/w20/${player.countryAlpha2}.png`} alt={player.country} className="w-4 h-3 object-cover rounded-sm shadow-sm" />
+                          ) : (
+                             <Shield className="h-3.5 w-3.5" />
+                          )}
+                          <span>{player.country || "Generate macro-level squad report"}</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-6 w-6 text-blue-400 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  );
+                }
+
+                return (
+                  <button key={player.id || i} onClick={() => handleSelectPlayer(player)} className="group relative flex items-center gap-4 p-4 w-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/50 rounded-xl transition-all duration-300 text-left">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-800 overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-colors">
+                      <img src={`https://api.sofascore.app/api/v1/player/${player.id}/image`} alt={player.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'; }} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        {player.countryAlpha2 && (
+                           <img src={`https://flagcdn.com/w20/${player.countryAlpha2}.png`} alt={player.country} className="w-4 h-3 object-cover rounded-[2px] shadow-sm" />
+                        )}
+                        <h3 className="font-semibold text-slate-200 group-hover:text-white">{player.name}</h3>
+                        {player.position !== '-' && <span className="text-[10px] text-slate-600 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">#{player.position}</span>}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-slate-500 group-hover:text-slate-400">
+                        {player.teamId ? <img src={`https://api.sofascore.app/api/v1/team/${player.teamId}/image`} alt={player.team} referrerPolicy="no-referrer" className="h-3 w-3 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }}/> : <Shield className="h-3 w-3" />}
+                        <span>{player.team}</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-slate-600 group-hover:text-blue-400 transition-all" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {configuringPlayer && !reportHtml && (
+           <div className="w-full max-w-3xl mt-8 space-y-4 animate-in fade-in zoom-in duration-500">
+             <div className="flex items-center justify-between gap-4 mb-2">
+                <button onClick={() => setConfiguringPlayer(null)} className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-blue-400 transition-colors uppercase tracking-widest"><ArrowLeft className="w-4 h-4"/> Back to List</button>
+                <div className="h-px flex-1 bg-slate-800" />
+                <span className="text-xs font-medium text-blue-400 uppercase tracking-widest">Select Target Campaign</span>
+             </div>
+
+             <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 p-4 w-full bg-slate-900 border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.1)] rounded-xl">
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className={`flex shrink-0 items-center justify-center bg-slate-800 overflow-hidden border-2 border-blue-500/50 ${configuringPlayer.type === 'team' ? 'h-16 w-16 rounded-lg p-2' : 'h-14 w-14 rounded-full'}`}>
+                      <img 
+                        src={`https://api.sofascore.app/api/v1/${configuringPlayer.type === 'team' ? 'team' : 'player'}/${configuringPlayer.id}/image`} 
+                        referrerPolicy="no-referrer" 
+                        className={`h-full w-full ${configuringPlayer.type === 'team' ? 'object-contain' : 'object-cover'}`} 
+                      />
+                    </div>
+                    <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                        {configuringPlayer.countryAlpha2 && (
+                           <img src={`https://flagcdn.com/w20/${configuringPlayer.countryAlpha2}.png`} alt={configuringPlayer.country} className="w-4 h-3 object-cover rounded-sm shadow-sm" />
+                        )}
+                        <h3 className="font-bold text-white text-lg">{configuringPlayer.name}</h3>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-slate-400">
+                        {configuringPlayer.type !== 'team' && configuringPlayer.teamId && <img src={`https://api.sofascore.app/api/v1/team/${configuringPlayer.teamId}/image`} referrerPolicy="no-referrer" className="h-3.5 w-3.5 object-contain" />}
+                        <span>{configuringPlayer.type === 'team' ? (configuringPlayer.country || "Club Analysis") : configuringPlayer.team}</span>
+                    </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+                   {isFetchingSeasons ? (
+                      <div className="flex items-center justify-center md:justify-start gap-2 text-slate-400 text-sm px-4 py-3 bg-slate-950 border border-slate-800 rounded-lg"><Loader2 className="w-4 h-4 animate-spin" /> Loading...</div>
+                   ) : (
+                      <select 
+                        className="bg-slate-950 border border-slate-700 text-white text-sm pl-3 pr-8 py-3 rounded-lg cursor-pointer hover:border-blue-500/50 focus:outline-none focus:border-blue-500 transition-colors w-full md:w-auto"
+                        value={selectedTournamentSeason}
+                        onChange={(e) => setSelectedTournamentSeason(e.target.value)}
+                      >
+                        {sortedGroupKeys.map((groupName) => (
+                            <optgroup key={groupName} label={groupName}>
+                                {groupedSeasonsList[groupName].map((opt: any, idx: number) => (
+                                    <option key={idx} value={`${opt.s_id}|${opt.t_id}`}>{opt.label}</option>
+                                ))}
+                            </optgroup>
+                        ))}
+                      </select>
+                   )}
+                   <button 
+                     onClick={handleGenerateReport} 
+                     disabled={isLoading || isFetchingSeasons}
+                     className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] flex items-center justify-center gap-2 w-full md:w-auto min-w-[180px]"
+                   >
+                     {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : 'Analyze Target'}
+                   </button>
+                </div>
+             </div>
+           </div>
+        )}
+      </div>
+    </main>
+  );
+}
