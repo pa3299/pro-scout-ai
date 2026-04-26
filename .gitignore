@@ -1,54 +1,24 @@
-# 1. THE SHIELD: Ignore everything in the project by default
-/*
+# 1. THE VAULT: Keep these private folders completely off GitHub
+pro-scout-ui/
+proscout-dashboard/
+ProScout_Scraper/
+Completed_Scrapes/
+desktop.ini
 
-# 2. ROOT FILES: Essential config files
-!/.gitignore
-!/package.json
-!/package-lock.json
-!/next.config.ts
-!/next.config.js
-!/tsconfig.json
-!/postcss.config.mjs
-!/eslint.config.mjs
-!/README.md
+# 2. LARGE DATABASES
+*.db
+*.sqlite
 
-!/*.json
-!/*.js
-!/*.ts
-!/*.mjs
-!/*.cjs
-!/.gitignore
-!/README.md
+# 3. SENSITIVE KEYS
+.env
+.env.*
+.env.local
 
-# 3. ROOT COMPONENTS ONLY: (The slash guarantees pro-scout-ui is ignored)
-!/app/components/
-!/app/components/**
-
-# 4. LANE 1 ENGINE: Un-hide the app folder, but block everything inside it first
-!/app/
-/app/*
-
-# Un-hide only specific sub-directories inside /app
-!/app/api/
-!/app/club-seasons/
-!/app/generate/
-!/app/search/
-!/app/seasons/
-
-# Essential Next.js UI files for the root
-!/app/layout.tsx
-!/app/page.tsx
-!/app/globals.css
-# PUBLIC ASSETS (Logos, images, etc.)
-!/public/
-!/public/**
-
-# 5. ULTIMATE SAFETY NET: Always ignore these, even if whitelisted above
+# 4. STANDARD NEXT.JS JUNK (Saves upload time)
 node_modules/
 .next/
-out/
-build/
-*.db
-ProScout_Scraper/
-.env*
+/out/
+/build/
 .DS_Store
+*.tsbuildinfo
+next-env.d.ts
